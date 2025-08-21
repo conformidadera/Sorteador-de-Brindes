@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sorteador Brindes 🎁</title>
+  <style>
+    :root {
+      --bg: #1a1a40;
+      --muted: #c3c3e6;
+      --text: #ffffff;
+      --acc-2: #ffa45c;
+      --shadow: 0 20px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial;
+      background: radial-gradient(1200px 800px at 10% -10%, #3a3a7a 0, rgba(30,41,59,0) 70%),
+                  radial-gradient(1000px 700px at 110% 10%, #ff5e78 0, rgba(14,165,233,0) 65%),
+                  var(--bg);
+      color: var(--text);
+      padding: 32px 16px 64px;
+      display: grid;
+      place-items: start center;
+    }
+    .container { width: 100%; max-width: 1100px; display: grid; gap: 18px; grid-template-columns: repeat(12, 1fr); align-items: start; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(6px); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+    header.card { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    header h1 { margin: 0; font-size: clamp(24px, 3vw, 36px); letter-spacing: .4px; }
+    header p { margin: 0; color: var(--muted); }
+    .left { grid-column: span 7; }
+    .right { grid-column: span 5; }
+    @media (max-width: 980px) { .left, .right { grid-column: 1 / -1; } }
+    label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%; background: #0b1220; color: var(--text);
+      border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 12px 14px; outline: none;
+    }
+    textarea { min-height: 220px; resize: vertical; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    .btn { appearance: none; border: 1px solid rgba(255,255,255,.1); background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); color: var(--text); padding: 8px 16px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: transform .12s ease, box-shadow .12s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn.pink { background: linear-gradient(180deg, rgba(255,94,120,.4), rgba(255,94,120,.2)); border-color: rgba(255,94,120,.8); }
+    .btn.yellow { background: linear-gradient(180deg, rgba(250,204,21,.4), rgba(250,204,21,.2)); border-color: rgba(250,204,21,.8); color: #fff; }
+    .btn.red { background: linear-gradient(180deg, rgba(239,68,68,.4), rgba(239,68,68,.2)); border-color: rgba(239,68,68,.8); }
+    .btn.blue { background: linear-gradient(180deg, rgba(59,130,246,.3), rgba(59,130,246,.15)); border-color: rgba(59,130,246,.5); }
+    .btn.green { background: linear-gradient(180deg, rgba(34,197,94,.4), rgba(34,197,94,.2)); border-color: rgba(34,197,94,.8); }
+
+    .result, .history, .report { background: #0b1220; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,164,92,.12); border: 1px solid rgba(255,164,92,.35); border-radius: 999px; padding: 8px 12px; margin: 6px; font-weight: 600; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .empty { color: var(--muted); font-style: italic; }
+    .report-section { margin-bottom: 12px; }
+    .report-section strong { color: var(--acc-2); }
+    .hidden { display: none; }
+
+    /* loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(26,26,64,0.45);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+    .spinner {
+      border: 6px solid rgba(195,195,230,0.15);
+      border-top: 6px solid rgba(195,195,230,0.45);
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      animation: spin 1s linear infinite;
+      opacity: 0.95;
+    }
+    @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="card">
+      <div>
+        <h1>🎁 Sorteador Brindes</h1>
+        <p class="muted">Cole os participantes e sorteie conforme a quantidade de brindes.</p>
+      </div>
+    </header>
+
+    <section class="card left">
+      <div class="row">
+        <div class="col-4">
+          <label for="tipo">Brindes pertencentes ao evento</label>
+          <input type="text" id="tipo" placeholder="Ex: Evento Anual" />
+        </div>
+        <div class="col-4">
+          <label for="nome">Sorteio realizado por</label>
+          <input type="text" id="nome" />
+        </div>
+        <div class="col-4">
+          <label for="responsavel">Apuração do sorteio</label>
+          <input type="text" id="responsavel" />
+        </div>
+        <div class="col-4">
+          <label for="quantidade">Quantidade de itens</label>
+          <input type="number" id="quantidade" min="1" />
+        </div>
+        <div class="col-12">
+          <label for="items">Participantes</label>
+          <textarea id="items" placeholder="Cole um participante por linha (ou separados por vírgula)"></textarea>
+        </div>
+
+        <div class="col-12 controls">
+          <span class="muted">Não repetir participantes</span>
+          <button id="toggle-repeat" class="btn" aria-pressed="false">OFF</button>
+        </div>
+
+        <!-- botões Sortear e Novo Sorteio alinhados -->
+        <div class="col-12 controls" style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button id="btn-draw" class="btn pink" type="button">Sortear</button>
+          <button id="btn-new" class="btn yellow" type="button">Novo Sorteio</button>
+        </div>
+
+        <!-- botões Gerar Relatório e Exportações alinhados -->
+        <div class="col-12 controls" style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button id="btn-report" class="btn" type="button">Gerar Relatório</button>
+          <button id="btn-pdf" class="btn red hidden" type="button">Exportar PDF</button>
+          <button id="btn-img" class="btn red hidden" type="button">Exportar PNG</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card right">
+      <h3>Resultado</h3>
+      <div id="result" class="result empty">Nada por aqui ainda…</div>
+      <h3>Histórico</h3>
+      <div id="history" class="history"><div class="empty">Sem sorteios ainda.</div></div>
+      <h3>Relatório</h3>
+      <div id="report" class="report empty">Nenhum relatório gerado.</div>
+    </section>
+  </div>
+
+  <div class="loading-overlay" id="loading-overlay" aria-hidden="true">
+    <div class="spinner" role="status" aria-label="Carregando"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    // util
+    function cryptoRandomInt(max) {
+      const uint32 = new Uint32Array(1);
+      window.crypto.getRandomValues(uint32);
+      return uint32[0] % max;
+    }
+    function parseItems(text) {
+      return text.split(/\n|,/).map(s => s.trim()).filter(Boolean);
+    }
+
+    // elements
+    const btnDraw = document.getElementById('btn-draw');
+    const btnNew = document.getElementById('btn-new');
+    const btnReport = document.getElementById('btn-report');
+    const btnPdf = document.getElementById('btn-pdf');
+    const btnImg = document.getElementById('btn-img');
+    const toggleRepeat = document.getElementById('toggle-repeat');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const quantidadeInput = document.getElementById('quantidade');
+
+    // state
+    let noRepeat = false;
+    let fullList = [];
+    let availableParticipants = [];
+    let sorteiosRealizados = 0;
+    let lastReport = null;
+
+    toggleRepeat.addEventListener('click', () => {
+      noRepeat = !noRepeat;
+      toggleRepeat.textContent = noRepeat ? 'ON' : 'OFF';
+      toggleRepeat.setAttribute('aria-pressed', noRepeat ? 'true' : 'false');
+      toggleRepeat.classList.toggle('green', noRepeat);
+    });
+
+    function executarSorteio() {
+      const raw = document.getElementById('items').value;
+      const items = parseItems(raw);
+      const quantidade = parseInt(quantidadeInput.value, 10) || 0;
+
+      if (!items.length) { alert('Adicione os participantes.'); return; }
+      if (!quantidade || quantidade <= 0) { alert('Informe a quantidade de itens.'); return; }
+
+      if (!fullList.length || fullList.join('|') !== items.join('|')) {
+        fullList = [...items];
+        availableParticipants = [...items];
+      }
+
+      if (sorteiosRealizados >= quantidade) { alert('Todos os brindes já foram sorteados.'); return; }
+      if (noRepeat && availableParticipants.length === 0) { alert('Todos os participantes já foram sorteados.'); return; }
+
+      loadingOverlay.style.display = 'flex';
+      loadingOverlay.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => {
+        const pool = noRepeat ? availableParticipants : fullList;
+        const winnerIndex = cryptoRandomInt(pool.length);
+        const winner = pool[winnerIndex];
+
+        if (noRepeat) availableParticipants.splice(winnerIndex, 1);
+        sorteiosRealizados += 1;
+
+        document.getElementById('result').innerHTML = `<div class="small muted">Vencedor:</div><span class="pill">${winner}</span>`;
+        const history = document.getElementById('history');
+        if (history.querySelector('.empty')) history.innerHTML = '';
+        const entry = document.createElement('div');
+        entry.innerHTML = `<span class="pill">${winner}</span>`;
+        history.prepend(entry);
+
+        if (!lastReport) {
+          lastReport = {
+            total: fullList.length,
+            metodo: 'crypto.getRandomValues',
+            tipo: document.getElementById('tipo').value,
+            nome: document.getElementById('nome').value,
+            responsavel: document.getElementById('responsavel').value,
+            quantidade: quantidade,
+            vencedores: []
+          };
+        }
+        lastReport.vencedores.push(winner);
+
+        loadingOverlay.style.display = 'none';
+        loadingOverlay.setAttribute('aria-hidden', 'true');
+
+        if (sorteiosRealizados >= quantidade) setTimeout(() => alert('Todos os brindes já foram sorteados.'), 100);
+      }, 1000);
+    }
+
+    btnDraw.addEventListener('click', () => executarSorteio());
+
+    btnNew.addEventListener('click', () => {
+      if (!confirm('Os dados serão apagados. Deseja prosseguir?')) return;
+      document.getElementById('items').value = '';
+      document.getElementById('nome').value = '';
+      document.getElementById('responsavel').value = '';
+      quantidadeInput.value = '';
+      document.getElementById('result').innerHTML = '<div class="empty">Nada por aqui ainda…</div>';
+      document.getElementById('history').innerHTML = '<div class="empty">Sem sorteios ainda.</div>';
+      document.getElementById('report').innerHTML = '<div class="empty">Nenhum relatório gerado.</div>';
+      lastReport = null;
+      availableParticipants = [];
+      fullList = [];
+      sorteiosRealizados = 0;
+      btnPdf.classList.add('hidden');
+      btnImg.classList.add('hidden');
+    });
+
+    btnReport.addEventListener('click', () => {
+      const reportEl = document.getElementById('report');
+      if (!lastReport) { reportEl.innerHTML = '<div class="empty">Nenhum sorteio realizado ainda.</div>'; return; }
+      reportEl.classList.remove('empty');
+      reportEl.innerHTML = `
+        <div class="report-section"><strong>Brindes pertencentes ao evento:</strong> ${lastReport.tipo}</div>
+        <div class="report-section"><strong>Sorteio realizado por:</strong> ${lastReport.nome}</div>
+        <div class="report-section"><strong>Apuração do sorteio:</strong> ${lastReport.responsavel}</div>
+        <div class="report-section"><strong>Total de participantes:</strong> ${lastReport.total}</div>
+        <div class="report-section"><strong>Quantidade de itens:</strong> ${lastReport.quantidade}</div>
+        <div class="report-section"><strong>Método de aleatoriedade:</strong> ${lastReport.metodo}</div>
+        <div class="report-section"><strong>Vencedores sorteados:</strong><br>${lastReport.vencedores.map(v => `<span class='pill'>${v}</span>`).join(' ')}</div>
+      `;
+      btnPdf.classList.remove('hidden');
+      btnImg.classList.remove('hidden');
+    });
+
+    btnPdf.addEventListener('click', () => {
+      if (!lastReport) { alert('Nenhum relatório gerado ainda.'); return; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Relatório do Sorteio de Brindes", 10, 10);
+      doc.setFontSize(12);
+      doc.text(`Brindes pertencentes ao evento: ${lastReport.tipo}`, 10, 20);
+      doc.text(`Sorteio realizado por: ${lastReport.nome}`, 10, 30);
+      doc.text(`Apuração do sorteio: ${lastReport.responsavel}`, 10, 40);
+      doc.text(`Total de participantes: ${lastReport.total}`, 10, 50);
+      doc.text(`Quantidade de itens: ${lastReport.quantidade}`, 10, 60);
+      doc.text(`Método de aleatoriedade: ${lastReport.metodo}`, 10, 70);
+      let y = 80;
+      lastReport.vencedores.forEach((v, i) => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(`Rodada ${i + 1}: ${v}`, 10, y);
+        y += 10;
+      });
+      doc.save("relatorio_sorteio_brindes.pdf");
+    });
+
+    btnImg.addEventListener('click', () => {
+      if (!lastReport) { alert('Nenhum relatório gerado ainda.'); return; }
+      const reportEl = document.getElementById('report');
+      html2canvas(reportEl).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'relatorio_sorteio_brindes.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    });
+  </script>
+</body>
+</html>
